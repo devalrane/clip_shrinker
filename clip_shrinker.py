@@ -24,7 +24,7 @@ def extract_thumbnail(file_path, thumbnail_path):
 
 
 # Function to compress a single video file with progress tracking
-def compress_video(file_path, progress_bar, status_label):
+def compress_video(file_path, progress_bar, progress_label, status_label):
     try:
         compressed_folder = "compressed_files"
         if not os.path.exists(compressed_folder):
@@ -59,7 +59,9 @@ def compress_video(file_path, progress_bar, status_label):
                 # Parse progress and update progress bar
                 progress = get_progress(line, total_duration)
                 progress_bar["value"] = progress
-                status_label.config(text=f"Progress: {progress:.2f}%")
+                progress_label.config(
+                    text=f"{progress:.2f}%"
+                )  # Update the progress label
                 root.update_idletasks()
 
         process.wait()
@@ -119,34 +121,41 @@ def start_compression(files):
                 (200, int(image.height * 200 / image.width)), Image.ANTIALIAS
             )
             image = ImageTk.PhotoImage(image)
-            label_frame = tk.Frame(root)
-            label_frame.pack(pady=5)
+
+            # Create a frame for each video item
+            video_frame = tk.Frame(root)
+            video_frame.pack(pady=5)
 
             # Create a label for the thumbnail
-            thumbnail_label = tk.Label(label_frame, image=image)
+            thumbnail_label = tk.Label(video_frame, image=image)
             thumbnail_label.image = image  # Keep a reference
-            thumbnail_label.pack()
+            thumbnail_label.grid(row=0, column=0)
 
             # Create a label for the filename
             filename_label = tk.Label(
-                label_frame, text=os.path.basename(file_path), wraplength=200
+                video_frame, text=os.path.basename(file_path), wraplength=200
             )
-            filename_label.pack()
+            filename_label.grid(row=1, column=0)
 
-        # Add a progress bar
-        progress_bar = ttk.Progressbar(
-            root, orient="horizontal", length=300, mode="determinate"
-        )
-        progress_bar.pack(pady=5)
+            # Add a progress bar
+            progress_bar = ttk.Progressbar(
+                video_frame, orient="horizontal", length=300, mode="determinate"
+            )
+            progress_bar.grid(row=0, column=1, padx=10)
 
-        # Add a status label
-        status_label = tk.Label(root, text="Starting compression...")
-        status_label.pack()
+            # Add a label to show progress percentage inside the bar
+            progress_label = tk.Label(video_frame, text="0.00%", width=5)
+            progress_label.grid(row=0, column=1)  # Position over the progress bar
 
-        # Start compression in a new thread
-        threading.Thread(
-            target=compress_video, args=(file_path, progress_bar, status_label)
-        ).start()
+            # Add a status label
+            status_label = tk.Label(root, text="Starting compression...")
+            status_label.pack()
+
+            # Start compression in a new thread
+            threading.Thread(
+                target=compress_video,
+                args=(file_path, progress_bar, progress_label, status_label),
+            ).start()
 
 
 # Function to browse and select files
