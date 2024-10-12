@@ -33,7 +33,7 @@ To run the application on your local machine, download the executable file, `cli
 
    ```
    git clone https://github.com/devalrane/clip_shrinker.git
-   cd video-compressor
+   cd clip_shrinker
    ```
 
 2. Install Required Packages:
