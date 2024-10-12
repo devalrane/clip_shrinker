@@ -123,33 +123,42 @@ def start_compression(files):
             image = ImageTk.PhotoImage(image)
 
             # Create a frame for each video item
-            video_frame = tk.Frame(root)
-            video_frame.pack(pady=5)
+            video_frame = tk.Frame(root, bg="#f7f7f7", bd=2, relief="groove")
+            video_frame.pack(pady=10, padx=10, fill=tk.X)
 
             # Create a label for the thumbnail
-            thumbnail_label = tk.Label(video_frame, image=image)
+            thumbnail_label = tk.Label(video_frame, image=image, bg="#f7f7f7")
             thumbnail_label.image = image  # Keep a reference
             thumbnail_label.grid(row=0, column=0)
 
             # Create a label for the filename
             filename_label = tk.Label(
-                video_frame, text=os.path.basename(file_path), wraplength=200
+                video_frame,
+                text=os.path.basename(file_path),
+                wraplength=200,
+                bg="#f7f7f7",
+                font=("Helvetica", 10),
             )
-            filename_label.grid(row=1, column=0)
+            filename_label.grid(row=1, column=0, pady=(5, 0))
 
             # Add a progress bar
             progress_bar = ttk.Progressbar(
                 video_frame, orient="horizontal", length=300, mode="determinate"
             )
-            progress_bar.grid(row=0, column=1, padx=10)
+            progress_bar.grid(row=0, column=1, padx=(10, 0))
 
             # Add a label to show progress percentage inside the bar
-            progress_label = tk.Label(video_frame, text="0.00%", width=5)
-            progress_label.grid(row=0, column=1)  # Position over the progress bar
+            progress_label = tk.Label(video_frame, text="0.00%", width=5, bg="#f7f7f7")
+            progress_label.grid(row=0, column=1)
 
             # Add a status label
-            status_label = tk.Label(root, text="Starting compression...")
-            status_label.pack()
+            status_label = tk.Label(
+                root,
+                text="Compressing...",
+                bg="#f7f7f7",
+                font=("Helvetica", 10, "italic"),
+            )
+            status_label.pack(pady=5)
 
             # Start compression in a new thread
             threading.Thread(
@@ -167,14 +176,70 @@ def browse_files():
         start_compression(files)
 
 
+# Function to open the directory containing compressed files
+def open_directory():
+    compressed_folder = os.getcwd() + "\\compressed_files"
+    if os.path.exists(compressed_folder):
+        # For Windows
+        if os.name == "nt":
+            os.startfile(compressed_folder)
+        # For macOS
+        elif os.name == "posix":
+            subprocess.Popen(["open", compressed_folder])
+        # For Linux
+        else:
+            subprocess.Popen(["xdg-open", compressed_folder])
+    else:
+        os.makedirs(compressed_folder)
+        os.startfile(compressed_folder)
+
+
 # Create the GUI
 root = tk.Tk()
-root.title("Video Compressor")
+root.title("Clip Shrinker")
+root.configure(bg="#f7f7f7")  # Set background color
 
-label = tk.Label(root, text="Select video files to compress")
+# Header label
+header_label = tk.Label(
+    root,
+    text="Clip Shrinker",
+    bg="#4a90e2",
+    fg="white",
+    font=("Helvetica", 16, "bold"),
+)
+header_label.pack(fill=tk.X)
+
+label = tk.Label(
+    root, text="Select video files to compress", bg="#f7f7f7", font=("Helvetica", 12)
+)
 label.pack(pady=10)
 
-select_button = tk.Button(root, text="Select Files", command=browse_files)
-select_button.pack(pady=5)
+# Frame for buttons
+button_frame = tk.Frame(root, bg="#f7f7f7")
+button_frame.pack(pady=5)
+
+select_button = tk.Button(
+    button_frame,
+    text="Select Files",
+    command=browse_files,
+    bg="#4a90e2",
+    fg="white",
+    font=("Helvetica", 12),
+    relief="raised",
+    bd=2,
+)
+select_button.pack(side=tk.LEFT, padx=(0, 5))
+
+open_button = tk.Button(
+    button_frame,
+    text="Open Directory",
+    command=open_directory,
+    bg="#4a90e2",
+    fg="white",
+    font=("Helvetica", 12),
+    relief="raised",
+    bd=2,
+)
+open_button.pack(side=tk.LEFT)
 
 root.mainloop()
