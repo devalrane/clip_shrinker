@@ -5,7 +5,6 @@ import threading
 import os
 import ffmpeg
 import subprocess
-import time
 
 
 # Function to extract thumbnail for each video
@@ -116,16 +115,29 @@ def start_compression(files):
         # Display the thumbnail and progress bar
         if thumbnail:
             image = Image.open(thumbnail)
+            image = image.resize(
+                (200, int(image.height * 200 / image.width)), Image.ANTIALIAS
+            )
             image = ImageTk.PhotoImage(image)
-            label = tk.Label(root, image=image)
-            label.image = image  # Keep a reference
-            label.pack()
+            label_frame = tk.Frame(root)
+            label_frame.pack(pady=5)
+
+            # Create a label for the thumbnail
+            thumbnail_label = tk.Label(label_frame, image=image)
+            thumbnail_label.image = image  # Keep a reference
+            thumbnail_label.pack()
+
+            # Create a label for the filename
+            filename_label = tk.Label(
+                label_frame, text=os.path.basename(file_path), wraplength=200
+            )
+            filename_label.pack()
 
         # Add a progress bar
         progress_bar = ttk.Progressbar(
             root, orient="horizontal", length=300, mode="determinate"
         )
-        progress_bar.pack()
+        progress_bar.pack(pady=5)
 
         # Add a status label
         status_label = tk.Label(root, text="Starting compression...")
