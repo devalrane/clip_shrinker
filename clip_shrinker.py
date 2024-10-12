@@ -1,89 +1,159 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
-import ffmpeg
+from tkinter import filedialog, ttk
+from PIL import Image, ImageTk
+import threading
 import os
+import ffmpeg
+import subprocess
+import time
 
 
-# Function to compress video files
-def compress_videos(files):
-    # Get the current directory
-    current_directory = os.getcwd()
-
-    # Create a new directory for compressed files if it doesn't exist
-    compressed_folder = os.path.join(current_directory, "compressed_files")
-    if not os.path.exists(compressed_folder):
-        os.makedirs(compressed_folder)
-
-    # Process each selected video file
-    for ip_file_path in files:
-        try:
-            # Extract the file name
-            file_name = os.path.basename(ip_file_path)
-            print(f"Processing: {file_name}")
-
-            # Create input stream
-            stream = ffmpeg.input(ip_file_path)
-
-            # Separate video and audio streams
-            stream_video = stream.video
-            stream_audio = stream.audio
-
-            # Output file path in the compressed_files folder
-            output_file = os.path.join(compressed_folder, "WA_" + file_name)
-
-            # Prepare ffmpeg output with video and audio compression
-            stream_op = ffmpeg.output(
-                stream_video,
-                stream_audio,
-                output_file,
-                vcodec="libx265",
-                acodec="aac",  # Explicit audio codec
-                preset="fast",
-            )
-
-            # Overwrite the output if it already exists
-            stream_op = stream_op.overwrite_output()
-
-            # Run the ffmpeg command
-            ffmpeg.run(stream_op)
-
-            print(f"Compressed video saved as: {output_file}")
-        except ffmpeg.Error as e:
-            print(
-                f"An error occurred while processing {file_name}: {e.stderr.decode()}"
-            )
-            messagebox.showerror("Compression Error", f"Failed to compress {file_name}")
-
-    # Show completion message
-    messagebox.showinfo("Success", "All selected videos have been compressed.")
+# Function to extract thumbnail for each video
+def extract_thumbnail(file_path, thumbnail_path):
+    try:
+        (
+            ffmpeg.input(file_path, ss="00:00:01")
+            .filter("scale", 200, -1)
+            .output(thumbnail_path, vframes=1)
+            .overwrite_output()
+            .run(quiet=True)
+        )
+        return thumbnail_path
+    except ffmpeg.Error as e:
+        print(f"Error extracting thumbnail: {e.stderr.decode()}")
+        return None
 
 
-# Function to allow the user to select video files
-def select_files():
-    filetypes = [("Video files", "*.mp4 *.mkv *.avi *.mov"), ("All files", "*.*")]
-    files = filedialog.askopenfilenames(title="Select Video Files", filetypes=filetypes)
-    if files:
-        compress_videos(files)
-    else:
-        messagebox.showwarning(
-            "No Files Selected", "Please select at least one video file to compress."
+# Function to compress a single video file with progress tracking
+def compress_video(file_path, progress_bar, status_label):
+    try:
+        compressed_folder = "compressed_files"
+        if not os.path.exists(compressed_folder):
+            os.makedirs(compressed_folder)
+
+        output_file = os.path.join(compressed_folder, os.path.basename(file_path))
+
+        command = [
+            "ffmpeg",
+            "-i",
+            file_path,
+            "-vcodec",
+            "libx265",
+            "-acodec",
+            "aac",
+            "-preset",
+            "fast",
+            "-y",
+            output_file,
+        ]
+
+        process = subprocess.Popen(
+            command, stderr=subprocess.PIPE, universal_newlines=True
         )
 
+        total_duration = None
+        for line in process.stderr:
+            if "Duration" in line:
+                # Extract total duration from the ffmpeg output
+                total_duration = get_duration(line)
+            elif "frame=" in line and total_duration:
+                # Parse progress and update progress bar
+                progress = get_progress(line, total_duration)
+                progress_bar["value"] = progress
+                status_label.config(text=f"Progress: {progress:.2f}%")
+                root.update_idletasks()
 
-# Create the main tkinter window
+        process.wait()
+
+        status_label.config(text="Compression Complete!")
+    except Exception as e:
+        status_label.config(text=f"Error: {str(e)}")
+
+
+# Function to calculate video duration from ffmpeg output
+def get_duration(duration_line):
+    try:
+        parts = duration_line.split(",")
+        time_part = parts[0].split()[1]  # Get the time part "00:00:10.00"
+        h, m, s = time_part.split(":")  # Ensure it has 3 parts (HH:MM:SS)
+        return int(h) * 3600 + int(m) * 60 + float(s)
+    except ValueError as e:
+        print(f"Error parsing duration: {e}")
+        return None
+
+
+# Function to calculate progress based on the ffmpeg output
+def get_progress(progress_line, total_duration):
+    try:
+        parts = progress_line.split()
+        time_str = None
+        for part in parts:
+            if part.startswith("time="):
+                time_str = part.split("=")[1]
+                break
+
+        if time_str:
+            time_parts = time_str.split(":")
+            if len(time_parts) == 3:  # Ensure it's a valid time format (HH:MM:SS)
+                h, m, s = time_parts
+                current_time = int(h) * 3600 + int(m) * 60 + float(s)
+                return (current_time / total_duration) * 100
+        return 0
+    except ValueError as e:
+        print(f"Error parsing progress: {e}")
+        return 0
+
+
+# Function to start the compression in a separate thread
+def start_compression(files):
+    for file_path in files:
+        # Create a thumbnail for the video
+        thumbnail_path = os.path.join(
+            "thumbnails", f"thumbnail_{os.path.basename(file_path)}.png"
+        )
+        thumbnail = extract_thumbnail(file_path, thumbnail_path)
+
+        # Display the thumbnail and progress bar
+        if thumbnail:
+            image = Image.open(thumbnail)
+            image = ImageTk.PhotoImage(image)
+            label = tk.Label(root, image=image)
+            label.image = image  # Keep a reference
+            label.pack()
+
+        # Add a progress bar
+        progress_bar = ttk.Progressbar(
+            root, orient="horizontal", length=300, mode="determinate"
+        )
+        progress_bar.pack()
+
+        # Add a status label
+        status_label = tk.Label(root, text="Starting compression...")
+        status_label.pack()
+
+        # Start compression in a new thread
+        threading.Thread(
+            target=compress_video, args=(file_path, progress_bar, status_label)
+        ).start()
+
+
+# Function to browse and select files
+def browse_files():
+    files = filedialog.askopenfilenames(
+        filetypes=[("Video Files", "*.mp4 *.mkv *.avi")]
+    )
+    if files:
+        start_compression(files)
+
+
+# Create the GUI
 root = tk.Tk()
 root.title("Video Compressor")
-root.geometry("400x200")
 
-# Create and place the label
-label = tk.Label(root, text="Select video files to compress", font=("Arial", 14))
-label.pack(pady=20)
+label = tk.Label(root, text="Select video files to compress")
+label.pack(pady=10)
 
-# Create and place the "Select Files" button
-select_button = tk.Button(
-    root, text="Select Files", command=select_files, font=("Arial", 12)
-)
-select_button.pack(pady=10)
+select_button = tk.Button(root, text="Select Files", command=browse_files)
+select_button.pack(pady=5)
 
-# Start the tkinter event loop
 root.mainloop()
