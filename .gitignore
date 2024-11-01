@@ -1,0 +1,6 @@
+*.mp4 
+*.avi 
+*.mkv 
+*.wmv 
+thumbnails/
+compressed_files/
