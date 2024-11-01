@@ -4,7 +4,7 @@ A Python-based GUI for Efficient Video Compression
 
 This Python application was born out of a personal need to share large video files captured during late-night gaming sessions. Designed for casual gamers, it offers a user-friendly interface for uploading and compressing video content, significantly reducing file size without compromising quality. With a compression rate of 92%, this tool enables seamless sharing of even the most substantially large video files.
 
-Supported formats: `mp4`, `mkv`, `.avi`
+Supported formats: `.mp4`, `.mkv`, `.avi`
 
 ## Features
 
