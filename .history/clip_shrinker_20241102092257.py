@@ -41,6 +41,10 @@ def extract_thumbnail(file_path):
 # Function to compress a single video file with progress tracking
 def compress_video(file_path, progress_bar, progress_label, status_label):
     try:
+        # compressed_folder = "compressed_files"
+        # if not os.path.exists(compressed_folder):
+        #     os.makedirs(compressed_folder)
+
         output_file = os.path.join(COMPRESSED_FOLDER_PATH, os.path.basename(file_path))
 
         command = [
@@ -120,11 +124,11 @@ def get_progress(progress_line, total_duration):
 def start_compression(files):
     for file_path in files:
         # Create a thumbnail for the video
-        image = extract_thumbnail(file_path)
+        thumbnail_image = extract_thumbnail(file_path)
 
         # Display the thumbnail and progress bar
-        if image:
-            # image = thumbnail_image
+        if thumbnail_image:
+            image = Image.open(thumbnail_image)
             image = image.resize(
                 (200, int(image.height * 200 / image.width)), Image.ANTIALIAS
             )
