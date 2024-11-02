@@ -18,9 +18,6 @@ def create_folders():
         os.makedirs(THUMBNAILS_PATH)
 
 
-create_folders()
-
-
 # Function to extract thumbnail for each video
 def extract_thumbnail(file_path, thumbnail_path):
     try:

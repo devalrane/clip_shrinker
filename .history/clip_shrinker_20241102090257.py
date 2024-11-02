@@ -18,9 +18,6 @@ def create_folders():
         os.makedirs(THUMBNAILS_PATH)
 
 
-create_folders()
-
-
 # Function to extract thumbnail for each video
 def extract_thumbnail(file_path, thumbnail_path):
     try:
@@ -40,11 +37,11 @@ def extract_thumbnail(file_path, thumbnail_path):
 # Function to compress a single video file with progress tracking
 def compress_video(file_path, progress_bar, progress_label, status_label):
     try:
-        # compressed_folder = "compressed_files"
-        # if not os.path.exists(compressed_folder):
-        #     os.makedirs(compressed_folder)
+        compressed_folder = "compressed_files"
+        if not os.path.exists(compressed_folder):
+            os.makedirs(compressed_folder)
 
-        output_file = os.path.join(COMPRESSED_FOLDER_PATH, os.path.basename(file_path))
+        output_file = os.path.join(compressed_folder, os.path.basename(file_path))
 
         command = [
             "ffmpeg",
