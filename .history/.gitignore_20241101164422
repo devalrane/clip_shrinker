@@ -4,5 +4,3 @@
 *.wmv 
 thumbnails/
 compressed_files/
-build/
-*.spec
